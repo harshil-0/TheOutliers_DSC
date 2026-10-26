@@ -1,0 +1,6 @@
+stage,rows,removed_at_step
+Raw rows,541909,0.0
+After exact duplicates,536641,5268.0
+After positive noncancelled sales,524878,11763.0
+After known customer,392692,132186.0
+After merchandise code rule,391150,1542.0

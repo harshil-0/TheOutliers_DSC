@@ -1,0 +1,440 @@
+%=======================================================================
+%  CSE558 Data Science - Midterm Project Report Template
+%  Monsoon 2026, IIIT-Delhi
+%
+%  How to use this template
+%   1. Set your project title in the EDIT THIS block below.
+%   2. Replace everything in LIGHT BLUE with your own text and numbers.
+%      The numbers in the example are made up for illustration.
+%   3. Grey italic lines are instructions. Delete them as you write, or
+%      hide them all at once with \showhintsfalse.
+%   4. Upload your plots to the project and put their file names in
+%      \figfile{...}{...}. Until a file exists, a labelled box is shown.
+%
+%  Sections 1-5 follow items 1-5 of the report guidelines; Section 6 is
+%  the limitations of your analysis. The link to your code (item 6) goes
+%  at the top. At most 8 pages.
+%  Compile with pdfLaTeX (Overleaf's default setting works), twice.
+%=======================================================================
+\documentclass[10pt,a4paper,twocolumn]{article}
+
+%========================= EDIT THIS =========================
+% Your project title: it sets the heading AND the PDF's title.
+\newcommand{\projecttitle}{First-basket variety and 90-day customer behaviour: evidence from UK online retail}
+\newif\ifshowhints
+\showhintsfalse     % \showhintsfalse hides every grey instruction line
+%=============================================================
+
+%-------------------------------------------- fonts (no need to edit)
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \IfFileExists{carlito.sty}%
+    {\usepackage[sfdefault]{carlito}}%              Calibri look
+    {\usepackage[scaled=0.92]{helvet}\renewcommand{\familydefault}{\sfdefault}}%
+  \usepackage{courier}
+\else
+  \usepackage[no-math]{fontspec}
+  \setmainfont{Carlito}[Extension=.ttf, UprightFont=*-Regular, BoldFont=*-Bold,
+    ItalicFont=*-Italic, BoldItalicFont=*-BoldItalic]
+\fi
+
+%----------------------------------------------------------- packages
+\usepackage[margin=18mm,bottom=20mm,columnsep=7mm]{geometry}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{needspace}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={\projecttitle},
+            pdfsubject={CSE558 Data Science, Monsoon 2026: Midterm Project Report}}
+
+%------------------------------------------------------------- layout
+\definecolor{eg}{HTML}{7396C4}         % worked example (light blue)
+\definecolor{hintgrey}{gray}{0.58}     % instructions (light grey)
+
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection.}{0.5em}{}
+\titlespacing*{\section}{0pt}{12pt}{3pt}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.5em}{}
+\titlespacing*{\subsection}{0pt}{10pt}{2pt}
+\newcommand{\sectionbreak}{\needspace{10\baselineskip}}
+\newcommand{\subsectionbreak}{\needspace{10\baselineskip}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlist{leftmargin=1.2em, itemsep=2pt, topsep=2pt, parsep=0pt}
+\renewcommand{\arraystretch}{1.25}
+\setlength{\tabcolsep}{4pt}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{K}[1]{>{\raggedright\arraybackslash\bfseries\boldmath}p{#1}}  % bold labels
+
+%--------------------------------------------------------- shorthands
+% Instruction line. Delete these as you fill the template in.
+\newcommand{\hint}[1]{\ifshowhints{\footnotesize\itshape\color{hintgrey}#1\par}\fi}
+% Worked example: inline or in a table cell. REPLACE the contents.
+\newcommand{\eg}[1]{\textcolor{eg}{#1}}
+% Worked example running over a whole paragraph.
+\newcommand{\egblock}[1]{{\color{eg}#1\par}}
+% Bold label followed by an example.
+\newcommand{\field}[2]{\textbf{#1}~\eg{#2}\par}
+% Part a)-c) of a test, and a small bold heading.
+\newcommand{\tpart}[2]{\par\needspace{12\baselineskip}\smallskip\textbf{#1)~#2}\par}
+\newcommand{\minihead}[1]{\par\needspace{8\baselineskip}\smallskip\textbf{#1}\par}
+% Column and file names.
+\newcommand{\code}[1]{\texttt{#1}}
+% \figfile{file}{height}: your plot, or a labelled box until the file exists.
+\newcommand{\figfile}[2]{%
+  \IfFileExists{#1}%
+    {\includegraphics[width=\linewidth,height=#2,keepaspectratio]{#1}}%
+    {\fbox{\parbox[c][#2][c]{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}%
+      {\centering\small\itshape\color{hintgrey}Your plot: \detokenize{#1}}}}}
+
+%=======================================================================
+
+\input{results/report_values.tex}
+
+\begin{document}
+\twocolumn[%
+{\small\bfseries CSE558 Data Science\ \ \textbullet\ \ Midterm Project Report\ \ \textbullet\ \ Monsoon 2026\par}
+\vspace{4pt}
+{\LARGE\bfseries\raggedright\projecttitle\par}
+\vspace{6pt}\rule{\linewidth}{1pt}
+\par
+{\small\begin{tabularx}{\linewidth}{@{}K{2.4cm}Y@{}}
+\toprule
+Group name & The Outliers\\
+Dataset & \href{https://archive.ics.uci.edu/dataset/352/online+retail}{UCI Machine Learning Repository: Online Retail (Chen, 2015)}\\
+Code & \href{https://github.com/harshil-0/TheOutliers_DSC}{github.com/harshil-0/TheOutliers\_DSC} (notebook, script and README)\\
+\bottomrule\end{tabularx}}\par
+\vspace{2pt}
+\par
+{\small\begin{tabularx}{\linewidth}{@{}L{0.35cm}L{2.5cm}L{1.5cm}L{4.55cm}Y@{}}
+\toprule
+\textbf{\#}&\textbf{Name}&\textbf{Roll no.}&\textbf{Institute email}&\textbf{Contribution / assigned responsibility}\\\midrule
+1&Aayush Gupta&2023014&aayush23014@iiitd.ac.in&Data provenance and cohort preparation; T1 repurchase inference.\\
+2&Harshil&2023235&harshil23235@iiitd.ac.in&Spending transformation and T2; reproducible notebook and repository.\\
+3&Raghav Mittal&2023415&raghav23415@iiitd.ac.in&Paired-customer analysis and T3; bootstrap and sensitivity checks.\\
+4&Utkarsh&2023569&utkarsh23569@iiitd.ac.in&Return-time derivation and T4; timing visualisation and assumptions.\\
+5&Jaideep Dahiya&2023254&jaideep23254@iiitd.ac.in&Frequency analysis and T5; report integration and limitations.\\
+\bottomrule\end{tabularx}}\par
+{\footnotesize\textbf{AI assistance:} Generative AI assisted the project code, statistical analysis and report drafting. The entries above allocate team responsibilities; they are not claims of independent, unaided authorship.\par}
+\vspace{8pt}
+]
+
+\section{Dataset}
+\textbf{Source.} Chen's \emph{Online Retail} dataset [1], original UCI workbook, retrieved 13 October 2026 (CC BY 4.0). Records span 1 December 2010--9 December 2011. A raw row is an \emph{invoice line}, not a customer or complete basket. The UK retailer sells giftware and serves wholesale customers as well as other buyers.
+
+\textbf{Raw issues.} Missing IDs/descriptions, exact repeats, cancellation invoices, nonpositive quantities/prices and non-merchandise codes require preparation. Although UCI's catalogue labels missingness ``No'', the supplied workbook contains missing values; measurements below come from the file.
+
+\par
+{\small\begin{tabularx}{\linewidth}{@{}Yrr@{}}\toprule
+&Raw&Encoded\\\midrule
+Rows&541,909&391,150\\
+Columns&8&60\\
+Rows $\times$ columns&4,335,272&23,469,000\\\bottomrule
+\end{tabularx}}\par
+\textbf{Size check:} $391{,}150\times60=23{,}469{,}000\ge3{,}000{,}000$. The saved sparse matrix has four numeric features and one-hot indicators for country (37), year-month (13) and observed weekday (6). This is its logical size, not its nonzero count. No customer/invoice/SKU dummy expansion is used. The inferential sample is smaller by design.
+
+\minihead{Key features}
+\par
+{\footnotesize\begin{tabularx}{\linewidth}{@{}L{2.15cm}L{1.45cm}Y@{}}\toprule
+Feature&Type&Real-world meaning\\\midrule
+InvoiceNo, CustomerID&Nominal&Invoice and customer linkage keys\\
+StockCode&Nominal&Product/SKU identifier\\
+Quantity&Discrete&Units on an invoice line\\
+UnitPrice&Continuous&Price per unit in GBP\\
+InvoiceDate&Temporal&Transaction timestamp\\
+Country&Nominal&Customer residence country\\
+LineValue&Continuous&Quantity $\times$ UnitPrice, GBP\\
+First breadth&Discrete&Distinct SKUs on index day\\
+repeat90&Binary&Any eligible return in days 1--90\\
+spend90&Continuous&Gross future merchandise spend\\
+Return gap&Discrete&Days from index to second day\\
+days90&Discrete&Distinct subsequent shopping days\\\bottomrule
+\end{tabularx}}\par
+
+\section{Data preparation}
+\par
+{\footnotesize\begin{tabularx}{\linewidth}{@{}L{1.8cm}L{2.2cm}Y@{}}\toprule
+Issue&Action&Reason\\\midrule
+Exact duplicates&Remove 5,268; also analyse with repeats retained&Identical lines may be logging repeats or legitimate purchases; check ambiguity.\\
+Cancellation / invalid sale&Remove 11,763 further lines; require non-C invoice, quantity and price $>0$&Target gross purchases; do not flip signs or claim net revenue.\\
+Missing customer&Remove 132,186 further lines&Longitudinal linkage needs identity; never impute an ID.\\
+Non-merchandise&Remove 1,542 further lines; code must be five digits plus 0--2 letters&Excludes fees/manual entries; declared heuristic may miss unusual valid SKUs.\\
+Missing description&No imputation; none remain&Variety uses StockCode, not text.\\
+Large orders&Retain all; flag 30,484 lines above GBP 42.075 IQR fence&Wholesale purchases can be real; a tail flag is not proof of error.\\
+Categorical data&One-hot country, month and weekday&Avoid artificial ordinal meaning; save actual encoded matrix.\\
+Same-day invoices&Aggregate by UK customer and date&Split invoices should not count as later visits.\\\bottomrule
+\end{tabularx}}\par
+\textbf{Derived variables.} Compute line value, calendar day and distinct daily SKUs. Sum later spend and count distinct shopping days in days 1--90. A non-returner has zero future spend and days, but an unavailable second-basket size and return gap. Those missing quantities are never replaced by zero or an invented return date.
+
+\section{What changed after preparation}
+\par
+{\small\begin{tabularx}{\linewidth}{@{}Yrr@{}}\toprule
+Measure&Before&After\\\midrule
+Transaction rows&541,909&391,150\\
+Raw / encoded columns&8&60\\
+Missing customer IDs&135,080&0\\
+Missing descriptions&1,454&0\\
+Exact duplicate rows&5,268&0\\
+Quantity $\leq0$&10,624&0\\
+UnitPrice $\leq0$&2,517&0\\
+Cancellation rows&9,288&0\\\bottomrule
+\end{tabularx}}\par
+\textbf{Reconciliation:} 541,909 $-$ 5,268 $-$ 11,763 $-$ 132,186 $-$ 1,542 $=$ 391,150. Descriptive issue counts above overlap, whereas these sequential removals do not.
+
+The cleaned table retains eight original fields plus LineValue and Day. Its 4,334 customers and 18,402 invoices include non-UK activity. Restricting to the UK and aggregating gives 15,044 shopping days for 3,916 customers. Cohort eligibility leaves \textbf{2,172 customers}; 878 return within 90 days. Identity filtering enables linkage, daily aggregation changes the unit to behaviour, and fixed follow-up makes outcomes comparable. Large transactions remain rather than being deleted to force normality.
+
+\section{Basic questions and problem statement}
+\minihead{Basic questions}
+\begin{enumerate}
+\item How many different products occur in first baskets?
+\item What fraction of customers return within 90 days?
+\item How uneven is subsequent spending?
+\end{enumerate}
+\begin{figure}[!ht]
+\figfile{figures/01_breadth.pdf}{3.5cm}
+\caption{First-day variety is right-skewed (median 17 SKUs). Ten SKUs is a declared segmentation rule, not a fitted optimum.}
+\end{figure}
+\begin{figure}[!ht]
+\figfile{figures/02_repeat.pdf}{3.5cm}
+\caption{Broad-basket customers return more often: 43.47\% versus 32.62\%; bars show marginal Wilson 95\% intervals.}
+\end{figure}
+\begin{figure}[!ht]
+\figfile{figures/03_spend.pdf}{3.5cm}
+\caption{Zero outcomes are common and monetary tails differ. A log-spending contrast is not an arithmetic-revenue gain.}
+\end{figure}
+
+\minihead{Our problem statements}
+\fbox{\begin{minipage}{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}
+\textbf{P1 (primary):} Is first-day variety associated with 90-day repurchase and gross spending?\\[3pt]
+\textbf{P2:} Among returners, does variety change from the first to the second shopping day?\\[3pt]
+\textbf{P3:} Among returners, does mean return time differ by first-basket breadth?\\[3pt]
+\textbf{P4:} Among returners, is first-day variety associated with subsequent shopping frequency?
+\end{minipage}}
+
+\textbf{Novelty relative to EDA.} No single invoice line contains basket breadth, equal follow-up, or linked first/second behaviour. We construct customer histories to separate occurrence, spending, composition, timing and frequency. This is project-level analytical novelty, not a claim of a previously unstudied topic.
+
+\section{Statistical inferences}
+\textbf{Unit and cohort.} One customer is one analytical record. The index is the earliest eligible UK shopping day in the entire file, restricted to 1 January--31 August 2011. December-observed customers are excluded; this washout does not establish genuine new-customer status. The latest 90-day window ends 29 November, before the file ends. Outcomes exclude the index day. Cancellations/refunds are not matched; spending is gross merchandise purchases, not profit.
+
+\textbf{Groups.} Broad means 10+ first-day SKUs ($n=1,562$); narrow means 1--9 ($n=610$). Among 878 returners, group sizes are 679 and 199. Thresholds 5 and 15 are diagnostic checks, not searches for significance.
+
+\textbf{Analysis history.} The supplied plan dated 13 October specifies T1--T3. T4--T5 were specified in a dated 25 October addendum after reviewing the earlier work and before running the added tests. This is transparent staged analysis, not external preregistration or five hypotheses specified before seeing any data.
+
+\textbf{Error control.} All five main tests are two-sided; $\alpha=0.05$ with Holm adjustment across \emph{all five} p-values. This controls the model-based family-wise error rate without requiring independence between tests [4]. Reported 95\% CIs are marginal, not simultaneous. Diagnostic comparisons are not extra confirmatory discoveries. Practical thresholds are explicit analyst choices, not validated commercial standards.
+
+\subsection*{Test 1 (P1): does repurchase probability differ?}
+\tpart{a}{Hypotheses and design}
+\par
+{\small\begin{tabularx}{\linewidth}{@{}K{2.8cm}Y@{}}\toprule
+$H_0$ / $H_1$&$p_B-p_N=0$ / $p_B-p_N\ne0$\\
+Alpha / side&0.05, five-test Holm / two-sided\\
+Test&Pearson $2\times2$ chi-square, no continuity correction\\
+Meaningful effect&5 percentage points (pp)\\\bottomrule
+\end{tabularx}}\par
+Five pp means 50 additional returning customers per 1,000, a planning threshold rather than established campaign economics.
+\tpart{b}{Test choice and alternatives}
+Two separate groups and a binary response form a contingency table. All expected cells exceed 246; customer aggregation avoids within-customer line pseudoreplication. It does not eliminate shared calendar influences.
+\par
+{\footnotesize\begin{tabularx}{\linewidth}{@{}L{2.2cm}Y@{}}\toprule
+Alternative&Comparison / reason\\\midrule
+Two-proportion z&Equivalent two-sided test: $z^2=\chi^2$; not new evidence.\\
+Fisher exact&Valid but unnecessary for large expected counts; $p=\FisherP$.\\
+Yates correction&More conservative; $p=\YatesP$.\\
+McNemar&Requires paired binary observations, absent here.\\
+Adjusted model&Answers a conditional question; exploratory sensitivity below.\\\bottomrule
+\end{tabularx}}\par
+\tpart{c}{Result and practical meaning}
+\par
+{\small\begin{tabularx}{\linewidth}{@{}Yrr@{}}\toprule
+Group&Return&No return\\\midrule
+Broad&679&883\\Narrow&199&411\\\bottomrule\end{tabularx}}\par
+\par
+{\small\begin{tabularx}{\linewidth}{@{}K{2.8cm}Y@{}}\toprule
+Estimate&$+\TOneEst$ pp (43.47\% vs 32.62\%)\\
+95\% CI&$\TOneLow$ to $\TOneHigh$ pp\\
+Statistic (df)&$\chi^2=\TOneStat$ ($\TOneDF$)\\
+Raw / Holm p&$\TOneRawP$ / $\TOneHolmP$\\
+Decision&\TOneDecision\ $H_0$\\\bottomrule\end{tabularx}}\par
+The Newcombe--Wilson interval for the risk difference lies above 5 pp. This supports potentially useful \emph{unadjusted} segmentation, not the effect of making customers buy more products. Adjustment below weakens evidence of an association beyond basket size.
+
+\subsection*{Test 2 (P1): does subsequent spending differ?}
+\tpart{a}{Hypotheses and design}
+Let $Y=\ln(1+S)$, where $S$ is numerical future gross spending in GBP. The currency unit is fixed; adding 1 makes the transformation unit-dependent.
+\par
+{\small\begin{tabularx}{\linewidth}{@{}K{2.8cm}Y@{}}\toprule
+$H_0$ / $H_1$&$\mu_{Y,B}-\mu_{Y,N}=0$ / $\ne0$\\
+Alpha / side&0.05, five-test Holm / two-sided\\
+Test&Welch independent-samples t\\
+Meaningful effect&$|\Delta_Y|\ge\ln(1.20)=0.1823$\\\bottomrule\end{tabularx}}\par
+The threshold corresponds to a 20\% geometric-mean ratio of $(1+S)$, or its reciprocal, not a 20\% arithmetic-revenue increase.
+\tpart{b}{Test choice and alternatives}
+Skewed monetary outcomes, independent groups and unknown, potentially unequal variances motivate Welch on the declared log scale. Group log SDs are 3.021 and 2.769. Large samples support approximate inference on means; bootstrap agreement is checked without assuming normal individual purchases.
+\par
+{\footnotesize\begin{tabularx}{\linewidth}{@{}L{2.2cm}Y@{}}\toprule
+Alternative&Comparison / reason\\\midrule
+Pooled t&Unnecessary equal-variance restriction; $t=5.115$, $p=\PooledP$. No variance pretest is needed to choose Welch.\\
+Mann--Whitney&Ordering/distribution comparison, not generally a mean or median test; $p=\SpendRankP$.\\
+Raw-spend Welch&Different, commercially relevant estimand; $p=\RawSpendP$.\\
+z / paired t&Population variances unknown / no broad--narrow customer pairing.\\\bottomrule\end{tabularx}}\par
+\tpart{c}{Result and practical meaning}
+\par
+{\small\begin{tabularx}{\linewidth}{@{}K{2.8cm}Y@{}}\toprule
+Estimate&$\TTwoEst$ ($\LogBroad$ vs $\LogNarrow$)\\
+95\% CI&$\TTwoLow$ to $\TTwoHigh$\\
+Statistic (df)&$t=\TTwoStat$ ($\TTwoDF$)\\
+Raw / Holm p&$\TTwoRawP$ / $\TTwoHolmP$\\
+Decision&\TTwoDecision\ $H_0$\\\bottomrule\end{tabularx}}\par
+The exponentiated effect is $\Ratio$ (95\% CI 1.576--2.684), exceeding the declared transformed-effect threshold. \textbf{Raw mean spending is GBP \RawBroad\ versus GBP \RawNarrow}: the difference is GBP $-15.48$, CI $-174.13$ to $+143.17$. There is no clear evidence of higher average revenue in pounds. T2 also mixes return occurrence with spending among returners.
+
+\subsection*{Test 3 (P2): does basket variety change on return?}
+\tpart{a}{Hypotheses and design}
+For each returning customer, $D=$ second-day minus first-day distinct SKUs. There are 878 complete pairs.
+\par
+{\small\begin{tabularx}{\linewidth}{@{}K{2.8cm}Y@{}}\toprule
+$H_0$ / $H_1$&$\mu_D=0$ / $\mu_D\ne0$\\
+Alpha / side&0.05, five-test Holm / two-sided\\
+Test&Paired t-test\\
+Meaningful effect&$|\mu_D|\ge2$ SKUs\\\bottomrule\end{tabularx}}\par
+Two SKUs is an interpretable composition threshold; it does not establish profitability.
+\tpart{b}{Test choice and alternatives}
+The same customers provide both baskets. Inference uses their within-customer differences (SD 20.234; skewness $-0.617$), not separate normality assumptions for each basket. With $n=878$, the paired-mean approximation is supported by the bootstrap.
+\par
+{\footnotesize\begin{tabularx}{\linewidth}{@{}L{2.2cm}Y@{}}\toprule
+Alternative&Comparison / reason\\\midrule
+Independent t&Discards the pairing and misstates the standard error.\\
+Wilcoxon signed rank&Different location target with shape assumptions; $p=\SignedRankP$, 53 zero differences omitted.\\
+Sign test&Uses direction, ignores magnitude; $p=\SignP$.\\
+Customer bootstrap&Resamples complete paired differences; CI below.\\\bottomrule\end{tabularx}}\par
+\tpart{c}{Result and practical meaning}
+\par
+{\small\begin{tabularx}{\linewidth}{@{}K{2.8cm}Y@{}}\toprule
+Estimate&$\TThreeEst$ SKUs ($\FirstPair$ to $\SecondPair$)\\
+95\% CI&$\TThreeLow$ to $\TThreeHigh$ SKUs\\
+Statistic (df)&$t=\TThreeStat$ ($\TThreeDF$)\\
+Raw / Holm p&$\TThreeRawP$ / $\TThreeHolmP$\\
+Decision&\TThreeDecision\ $H_0$\\\bottomrule\end{tabularx}}\par
+The interval lies beyond two SKUs in absolute magnitude. Observed returners buy fewer distinct products on their second day on average. Initial stocking or regression to the mean could contribute; this does not establish declining loyalty or describe non-returners.
+\begin{figure}[!ht]\figfile{figures/04_change.pdf}{3.5cm}
+\caption{Paired changes tend negative, but individual changes vary widely. All observed differences are included.}\end{figure}
+
+\subsection*{Test 4 (P3): does return timing differ?}
+\tpart{a}{Hypotheses and design}
+Among returners only, let $G=$ days between index and second shopping day (range 1--90). Broad and narrow samples have 679 and 199 customers. Non-returners do not receive an imputed return gap.
+\par
+{\small\begin{tabularx}{\linewidth}{@{}K{2.8cm}Y@{}}\toprule
+$H_0$ / $H_1$&$\mu_{G,B}-\mu_{G,N}=0$ / $\ne0$\\
+Alpha / side&0.05, five-test Holm / two-sided\\
+Test&Welch independent-samples t\\
+Meaningful effect&Absolute difference of 7 days\\\bottomrule\end{tabularx}}\par
+Seven days represents one weekly contact-planning cycle, an analyst-selected threshold rather than validated marketing economics.
+\tpart{b}{Test choice and alternatives}
+The groups consist of different customers. A gap computed from two dates does not make the group comparison paired. Welch targets mean calendar days without equal-variance assumptions. The bounded outcome and sample sizes support approximate mean inference; customer bootstrap checks it.
+\par
+{\footnotesize\begin{tabularx}{\linewidth}{@{}L{2.2cm}Y@{}}\toprule
+Alternative&Comparison / reason\\\midrule
+Mann--Whitney&Ordering/distribution sensitivity, not the same mean-gap null; $U=68,735.5$, $p=\GapRankP$.\\
+Pooled / paired t&Adds equal-variance assumption / no paired broad--narrow customers.\\
+Survival analysis&Appropriate for time-to-return in the \emph{whole cohort}, with non-returners censored. Our conditional question is different.\\
+Bootstrap&5,000 within-group customer resamples, seed 5584; mean-gap CI below.\\\bottomrule\end{tabularx}}\par
+\tpart{c}{Result and practical meaning}
+\par
+{\small\begin{tabularx}{\linewidth}{@{}K{2.8cm}Y@{}}\toprule
+Group means (SD)&Broad $\GapBroad$ ($\GapSDBroad$); narrow $\GapNarrow$ ($\GapSDNarrow$) days\\
+Median [Q1, Q3]&Broad 42 [21.5, 63]; narrow 41 [23, 62.5] days\\
+Mean gap / 95\% CI&$\TFourEst$ days / $\TFourLow$ to $\TFourHigh$\\
+Statistic (df)&$t=\TFourStat$ ($\TFourDF$)\\
+Raw / Holm p&$\TFourRawP$ / $\TFourHolmP$\\
+Decision&\TFourDecision\ $H_0$\\\bottomrule\end{tabularx}}\par
+We find no clear mean-timing difference among observed returners. The marginal interval includes zero and lies within $\pm7$ days, suggesting any difference compatible with this interval is smaller than the proposed weekly threshold. This is not a prespecified equivalence test, a simultaneous bound, or a statement about the whole cohort.
+\begin{figure}[!ht]\figfile{figures/05_return_gap.pdf}{3.5cm}
+\caption{Return-gap distributions largely overlap among observed returners; excluded non-returners are not assigned fictitious times.}\end{figure}
+
+\subsection*{Test 5 (P4): does variety track purchase frequency?}
+\tpart{a}{Hypotheses and design}
+Among the 878 returners, $X=$ first-day SKU count and $F=$ subsequent shopping days in the original days-1--90 window. The initial day is excluded; the first return is included. Use numeric breadth, not the broad/narrow split.
+\par
+{\small\begin{tabularx}{\linewidth}{@{}K{2.8cm}Y@{}}\toprule
+$H_0$ / $H_1$&$\rho_s(X,F\mid\mathrm{return90})=0$ / $\ne0$\\
+Alpha / side&0.05, five-test Holm / two-sided\\
+Test&Spearman rank correlation; average ranks for ties\\
+Magnitude of interest&$|\rho_s|\ge0.10$\\\bottomrule\end{tabularx}}\par
+The 0.10 threshold is an analyst-chosen modest association of interest; it is not a universal commercial cutoff or a 10\% increase in visits. Of the returners, 549 have one later shopping day and 329 have two or more (range 1--15; mean 1.687).
+\tpart{b}{Test choice and alternatives}
+Spearman targets monotonic association between skewed discrete quantities, without requiring a straight-line relationship or normal marginals. Ties are retained. The p-value uses a large-sample approximation ($n=878$), not an exact no-ties calculation [2]. Zero rank correlation does not imply independence or exclude a non-monotonic relationship.
+\par
+{\footnotesize\begin{tabularx}{\linewidth}{@{}L{2.2cm}Y@{}}\toprule
+Alternative&Comparison / reason\\\midrule
+Pearson correlation&Targets linear raw-scale association; more sensitive to extreme magnitudes.\\
+Kendall tau-b&Tie-aware diagnostic; $\tau_b=\KendallTau$, $p=\KendallP$. Different effect scale.\\
+Chi-square&Requires unnecessary categorical cutoffs for these counts.\\
+Ordinary Poisson&Needs count-model assumptions and would ignore zero truncation from selecting returners.\\
+Bootstrap CI&Resample 5,000 complete customer pairs, rerank each resample; seed 5585.\\\bottomrule\end{tabularx}}\par
+\tpart{c}{Result and practical meaning}
+\par
+{\small\begin{tabularx}{\linewidth}{@{}K{2.8cm}Y@{}}\toprule
+Estimate / statistic&$\rho_s=\TFiveEst$; $n=878$\\
+95\% bootstrap CI&$\TFiveLow$ to $\TFiveHigh$\\
+Approximate t (df)&$\TFiveApproxT$ ($\TFiveDF$)\\
+Raw / Holm p&$\TFiveRawP$ / $\TFiveHolmP$\\
+Decision&\TFiveDecision\ $H_0$\\\bottomrule\end{tabularx}}\par
+The reference statistic is $t=\rho_s\sqrt{(n-2)/(1-\rho_s^2)}$; df $=n-2$ belongs to this approximation, not an exact rank distribution. The interval crosses zero and stays inside $\pm0.10$. Evidence of a meaningful monotonic frequency association is absent under the stated model and threshold; this is not proof of no relationship or a formal equivalence test.
+\begin{figure}[!ht]\figfile{figures/06_frequency.pdf}{3.5cm}
+\caption{Many returners buy on only one later day. Marker area reflects the number of customers at each observed breadth/frequency combination.}\end{figure}
+
+\subsection*{Robustness and synthesis}
+\textbf{Bootstrap.} T1--T2 resample customers separately within groups; T3 resamples paired differences (5,000 draws, seed 558). T4 uses seed 5584, and T5 resamples both measurements together with seed 5585. Percentile intervals are approximate and do not remove confounding [3].
+\par
+{\footnotesize\begin{tabularx}{\linewidth}{@{}L{1.6cm}YY@{}}\toprule
+Effect&Main 95\% CI&Bootstrap 95\% CI\\\midrule
+T1 (pp)&$\TOneLow$ to $\TOneHigh$&$\BootOneLow$ to $\BootOneHigh$\\
+T2 (log)&$\TTwoLow$ to $\TTwoHigh$&$\BootTwoLow$ to $\BootTwoHigh$\\
+T3 (SKUs)&$\TThreeLow$ to $\TThreeHigh$&$\BootThreeLow$ to $\BootThreeHigh$\\
+T4 (days)&$\TFourLow$ to $\TFourHigh$&$\BootFourLow$ to $\BootFourHigh$\\\bottomrule\end{tabularx}}\par
+Analytical and bootstrap intervals agree closely. T5's main interval is already the customer-pair bootstrap interval.
+
+\textbf{Duplicate sensitivity.} Keeping exact repeated lines leaves T1, T3, T4 and T5 unchanged. T2's log gap becomes $\DuplicateLog$ (main $\TTwoEst$), five-test Holm $p=\DuplicateLogP$. The substantive conclusions persist.
+
+\textbf{Cutoff sensitivity.} All variants use the same cohort and five-test Holm families; these checks are diagnostic.
+\par
+{\footnotesize\begin{tabularx}{\linewidth}{@{}L{1.0cm}YYY@{}}\toprule
+Cutoff&T1 gap (pp); Holm p&T2 log gap&T4 days; Holm p\\\midrule
+5+&$\CutFiveRisk$; $\CutFiveRiskP$&$\CutFiveLog$&$\CutFiveGap$; $\CutFiveGapP$\\
+10+&$\TOneEst$; $\TOneHolmP$&$\TTwoEst$&$\TFourEst$; $\TFourHolmP$\\
+15+&$\CutFifteenRisk$; $\CutFifteenRiskP$&$\CutFifteenLog$&$\CutFifteenGap$; $\CutFifteenGapP$\\\bottomrule\end{tabularx}}\par
+T1--T2 directions persist and T4 remains nonsignificant. T3 and T5 do not use the breadth split. This does not establish an optimal cutoff; T4's 5-SKU sensitivity CI ($-2.710$ to $8.583$ days) also shows that the weekly practical bound is not uniform across choices.
+
+\textbf{Adjustment for initial basket size.} An exploratory linear-probability model includes broad status, log initial spend, log initial units and index-month indicators (January reference), using all 2,172 customers. The design has 11 full-rank columns; HC3 heteroskedasticity-robust errors give a broad coefficient of $+4.98$ pp, CI $-0.19$ to $+10.15$ pp, $z=1.889$, $p=0.0588$. Fitted probabilities remain in [0,1]. Initial-spend medians differ: GBP 315.84 versus 138.28. Incremental value beyond basket size remains uncertain.
+
+\textbf{Integrated answer.} First-basket breadth is an unadjusted marker of returning and higher log-transformed future spending. It does not establish higher arithmetic revenue. Among returners, basket variety declines, while the added tests do not show faster return or a meaningful monotonic frequency association. Timing and frequency are related: an earlier return leaves more time for further visits within the same window. These are complementary descriptions, not independent causal mechanisms.
+
+\section{Limitations}
+\begin{itemize}
+\item \textbf{Association and confounding.} Customer type, wholesale activity, acquisition channels and product mix may influence both basket breadth and future purchases. Adjustment covers only measured proxies and is not causal identification.
+\item \textbf{History and selection.} First observed is not first-ever purchase. Unknown IDs, non-UK activity and later cohorts are excluded. Results may not generalise to those populations, other retailers or current markets.
+\item \textbf{Gross purchases.} Refunds and cancellations are not matched. We cannot infer net revenue, profit or intervention return on investment. The merchandise-code heuristic may omit genuine products.
+\item \textbf{Conditional returner analyses.} T3--T5 select 878 observed returners. Selection can induce associations; none describes an unobserved second basket or return time for non-returners. T3 can reflect stocking or regression to the mean. T5 is a count in the original window, not a post-return daily rate.
+\item \textbf{Dependence and seasonality.} Customers may share promotions or calendar shocks. Equal follow-up and customer-level resampling avoid line-level pseudoreplication but do not fully model common influences.
+\item \textbf{Model and threshold uncertainty.} Ten SKUs, 5 pp, the 20\% transformed ratio, two SKUs, seven days and $|\rho_s|=0.10$ are declared analytical choices. Inference is approximate and CIs are marginal. Non-rejection does not prove equality; no formal equivalence tests were specified.
+\item \textbf{Analysis history and sampling.} T4--T5 are disclosed later additions, not untouched confirmatory hypotheses. Holm corrects the stated family, not hypothetical unreported selection. This is a historical available-record cohort, not a probability sample of all retail customers.
+\end{itemize}
+
+\minihead{References and reproducibility}
+{\footnotesize
+[1] Chen, D. (2015). \emph{Online Retail} [Dataset]. UCI. \href{https://doi.org/10.24432/C5BW33}{doi:10.24432/C5BW33}. CC BY 4.0.\par
+[2] SciPy documentation: \href{https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_ind.html}{Welch t}, \href{https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_rel.html}{paired t}, \href{https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chi2_contingency.html}{chi2\_contingency}, \href{https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.spearmanr.html}{Spearman}, \href{https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kendalltau.html}{Kendall tau-b}.\par
+[3] SciPy: \href{https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bootstrap.html}{bootstrap resampling and paired observations}.\par
+[4] R statistical documentation: \href{https://stat.ethz.ch/R-manual/R-devel/library/stats/html/p.adjust.html}{Holm p-value adjustment}; Holm (1979), \emph{Scandinavian Journal of Statistics}, 6, 65--70.
+
+The linked repository supplies the executed notebook, script, plan, dictionary, raw/processed data, all results, figures and report source. Run \code{python analysis.py}; the notebook contains the same visible analysis. Versions and source SHA-256 are recorded. Report numerical tables are generated from \code{results.json} to avoid stale values. All five main tests and declared sensitivities are reported.
+}
+\end{document}

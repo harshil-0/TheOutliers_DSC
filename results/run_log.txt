@@ -1,0 +1,251 @@
+Core dependency version checks passed.
+
+{
+  "raw_shape": [
+    541909,
+    8
+  ],
+  "missing": {
+    "InvoiceNo": 0,
+    "StockCode": 0,
+    "Description": 1454,
+    "Quantity": 0,
+    "InvoiceDate": 0,
+    "UnitPrice": 0,
+    "CustomerID": 135080,
+    "Country": 0
+  },
+  "duplicates": 5268,
+  "encoded_shape": [
+    391150,
+    60
+  ],
+  "encoded_cells": 23469000,
+  "cohort_n": 2172,
+  "results": [
+    {
+      "test": "T1",
+      "statistic": 21.43176480285428,
+      "df": 1,
+      "p": 3.666463650072763e-06,
+      "estimate": 0.1084695955164669,
+      "ci": [
+        0.06315231977317906,
+        0.1521501511606028
+      ],
+      "holm_p": 1.0999390950218289e-05,
+      "reject_holm": true
+    },
+    {
+      "test": "T2",
+      "statistic": 5.3135160643034265,
+      "df": 1204.9554438072423,
+      "p": 1.2800061469094215e-07,
+      "estimate": 0.7210070167457319,
+      "ci": [
+        0.4547861824356491,
+        0.9872278510558146
+      ],
+      "holm_p": 5.120024587637686e-07,
+      "reject_holm": true
+    },
+    {
+      "test": "T3",
+      "statistic": -8.921781557356876,
+      "df": 877.0,
+      "p": 2.6324440589661532e-18,
+      "estimate": -6.092255125284738,
+      "ci": [
+        -7.432469788447198,
+        -4.752040462122277
+      ],
+      "holm_p": 1.3162220294830765e-17,
+      "reject_holm": true
+    },
+    {
+      "test": "T4",
+      "statistic": 0.3940426797554777,
+      "df": 325.0522704274457,
+      "p": 0.6938079020629813,
+      "estimate": 0.770376181348567,
+      "ci": [
+        -3.0757871511490418,
+        4.616539513846176
+      ],
+      "holm_p": 0.9691936035935931,
+      "reject_holm": false
+    },
+    {
+      "test": "T5",
+      "statistic": 0.02361804631908498,
+      "statistic_name": "Spearman rho",
+      "approx_t": 0.699225380969536,
+      "df": 876,
+      "df_note": "df of approximate t reference, not exact rank statistic",
+      "p": 0.48459680179679654,
+      "estimate": 0.02361804631908498,
+      "ci": [
+        -0.041310485414148536,
+        0.08901724477420456
+      ],
+      "holm_p": 0.9691936035935931,
+      "reject_holm": false,
+      "ci_method": "customer-pair percentile bootstrap, 5000 resamples, seed 5585"
+    }
+  ],
+  "details": {
+    "n_broad": 1562,
+    "n_narrow": 610,
+    "return_broad": 679,
+    "return_narrow": 199,
+    "table": [
+      [
+        679,
+        883
+      ],
+      [
+        199,
+        411
+      ]
+    ],
+    "expected": [
+      [
+        631.4162062615102,
+        930.5837937384898
+      ],
+      [
+        246.58379373848987,
+        363.4162062615101
+      ]
+    ],
+    "repeat_broad": 0.4346991037131882,
+    "repeat_narrow": 0.3262295081967213,
+    "raw_spend_broad": 248.96982074263764,
+    "raw_spend_narrow": 264.4490655737705,
+    "log_mean_broad": 2.5947305473059994,
+    "log_mean_narrow": 1.8737235305602675,
+    "spend_ratio": 2.0565031013223614,
+    "spend_ratio_ci": [
+      1.575836405507377,
+      2.68378430081186
+    ],
+    "pair_n": 878,
+    "first_pair_mean": 24.840546697038725,
+    "second_pair_mean": 18.748291571753985,
+    "paired_sd": 20.2336276800116,
+    "paired_skew": -0.6171502759134787,
+    "zero_paired_changes": 53,
+    "sd_log_broad": 3.020642278006456,
+    "sd_log_narrow": 2.769191853806731,
+    "gap_n_broad": 679,
+    "gap_n_narrow": 199,
+    "gap_mean_broad": 43.318114874815905,
+    "gap_mean_narrow": 42.54773869346734,
+    "gap_sd_broad": 24.402333390623493,
+    "gap_sd_narrow": 24.20965836173613,
+    "gap_median_broad": 42.0,
+    "gap_median_narrow": 41.0,
+    "gap_quartiles_broad": [
+      21.5,
+      63.0
+    ],
+    "gap_quartiles_narrow": [
+      23.0,
+      62.5
+    ],
+    "frequency_counts": {
+      "1": 549,
+      "2": 204,
+      "3": 64,
+      "4": 29,
+      "5": 13,
+      "6": 6,
+      "7": 5,
+      "8": 2,
+      "9": 3,
+      "10": 1,
+      "12": 1,
+      "15": 1
+    },
+    "frequency_mean": 1.6867881548974943,
+    "frequency_median": 1.0,
+    "repeaters_multiple_days": 329
+  },
+  "alternatives": {
+    "Fisher_exact_p": 3.6825688017842847e-06,
+    "Yates_chi2_p": 4.632001622915403e-06,
+    "Pooled_log_t": 5.115214588758001,
+    "Pooled_log_p": 3.408974447491737e-07,
+    "Raw_spend_Welch_p": 0.848120420912094,
+    "Raw_spend_Welch_ci": [
+      -174.12890043887919,
+      143.17041077661347
+    ],
+    "Mann_Whitney_log_p": 5.342375068634737e-08,
+    "Wilcoxon_paired_p": 5.639351510921534e-27,
+    "Sign_test_p": 3.967793926083397e-24,
+    "Gap_Mann_Whitney_U": 68735.5,
+    "Gap_Mann_Whitney_p": 0.7088791490269069,
+    "Frequency_Kendall_tau_b": 0.01854167121165585,
+    "Frequency_Kendall_p": 0.48374164841296163
+  },
+  "bootstrap_ci": [
+    [
+      0.0634702777019794,
+      0.15285977414411953
+    ],
+    [
+      0.44607184255798615,
+      0.9848108598799491
+    ],
+    [
+      -7.382744874715262,
+      -4.771070615034168
+    ]
+  ],
+  "extension_bootstrap_ci": {
+    "T4": [
+      -3.054915594171147,
+      4.549056216280219
+    ],
+    "T5": [
+      -0.041310485414148536,
+      0.08901724477420456
+    ]
+  },
+  "adjusted_risk": {
+    "estimate": 0.049804861862757115,
+    "se_hc3": 0.026359162836628938,
+    "ci95": [
+      -0.00185814795966225,
+      0.10146787168517649
+    ],
+    "z": 1.8894705484935892,
+    "p": 0.058828805517162526,
+    "n": 2172,
+    "covariates": [
+      "intercept",
+      "broad",
+      "log_initial_spend",
+      "log_initial_units",
+      "month_2",
+      "month_3",
+      "month_4",
+      "month_5",
+      "month_6",
+      "month_7",
+      "month_8"
+    ],
+    "predicted_outside_0_1": 0
+  }
+}
+
+Cleaning flow:
+                            stage   rows  removed_at_step
+                         Raw rows 541909              0.0
+           After exact duplicates 536641           5268.0
+After positive noncancelled sales 524878          11763.0
+             After known customer 392692         132186.0
+      After merchandise code rule 391150           1542.0
+
+Outputs: J:\sem7\DSC\CSE558_Transactional_Project
