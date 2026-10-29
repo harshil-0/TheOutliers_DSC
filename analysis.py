@@ -25,55 +25,76 @@ assert raw.shape == (541909, 8), 'Source changed; audit before proceeding.'
 # %% Cleaning, transaction encoding and shopping-day cohort
 
 def clean_data(raw, dedup=True):
+    #Workign on a copy
     x = raw.copy()
     flow = [('Raw rows', len(x))]
-    if dedup:
+    if dedup: #remove duplicate rows
         x = x.drop_duplicates().copy()
     flow.append(('After exact duplicates',len(x)))
+    # clearn invoice and stockcode
     x['InvoiceNo'] = x.InvoiceNo.astype(str).str.strip()
     x['StockCode'] = x.StockCode.astype(str).str.strip()
+    #removed cancelled 
     x = x.loc[~x.InvoiceNo.str.upper().str.startswith('C') & (x.Quantity>0) & (x.UnitPrice>0)].copy()
     flow.append(('After positive noncancelled sales',len(x)))
     x = x.loc[x.CustomerID.notna()].copy()
     flow.append(('After known customer',len(x)))
     x = x.loc[x.StockCode.str.fullmatch(r'\d{5}[A-Za-z]{0,2}')].copy()
     flow.append(('After merchandise code rule',len(x)))
-    x['CustomerID'] = x.CustomerID.astype('int64').astype(str)
     x['InvoiceDate'] = pd.to_datetime(x.InvoiceDate, errors='raise')
-    x['LineValue'] = x.Quantity*x.UnitPrice
     x['Day'] = x.InvoiceDate.dt.normalize()
+    x['CustomerID'] = x.CustomerID.astype('int64').astype(str)
+    x['LineValue'] = x.Quantity*x.UnitPrice
     assert x[['InvoiceDate','Country','StockCode','LineValue']].notna().all().all()
-    return x, pd.DataFrame(flow,columns=['stage','rows'])
+    cleaning_summary = pd.DataFrame(
+        flow,
+        columns=['stage', 'rows']
+    )
+    return x, cleaning_summary
 
 
 def make_cohort(x, threshold=10):
+    #using UK dataa
     uk = x.loc[x.Country.eq('United Kingdom')]
     days = uk.groupby(['CustomerID','Day'],sort=True).agg(
-        breadth=('StockCode','nunique'), spend=('LineValue','sum'),
-        units=('Quantity','sum'), invoices=('InvoiceNo','nunique')).reset_index()
+        breadth=('StockCode','nunique'), 
+        spend=('LineValue','sum'),
+        units=('Quantity','sum'), 
+        invoices=('InvoiceNo','nunique')).reset_index()
     first = days.drop_duplicates('CustomerID').rename(columns={
-        'Day':'index_day','breadth':'first_breadth','spend':'first_spend',
-        'units':'first_units','invoices':'first_invoices'})
+        'Day':'index_day',
+        'breadth':'first_breadth',
+        'spend':'first_spend',
+        'units':'first_units',
+        'invoices':'first_invoices'})
     c = first.loc[first.index_day.between('2011-01-01','2011-08-31')].copy()
     d = days.merge(c[['CustomerID','index_day']],on='CustomerID',validate='many_to_one')
     d['days_since'] = (d.Day-d.index_day).dt.days
     future = d.loc[d.days_since.between(1,90)].copy()
     agg = future.groupby('CustomerID').agg(spend90=('spend','sum'),days90=('Day','size'))
     second = future.sort_values(['CustomerID','Day']).drop_duplicates('CustomerID')[['CustomerID','Day','breadth']].rename(columns={'Day':'second_day','breadth':'second_breadth'})
-    c = c.merge(agg,on='CustomerID',how='left',validate='one_to_one').merge(second,on='CustomerID',how='left',validate='one_to_one')
-    c[['spend90','days90']] = c[['spend90','days90']].fillna(0)
+    c = c.merge(
+        agg,
+        on='CustomerID',
+        how='left',validate='one_to_one').merge(
+            second,
+            on='CustomerID',
+            how='left',
+            validate='one_to_one')
+    c[['spend90', 'days90']] = c[['spend90', 'days90']].fillna(0)
     c['repeat90'] = c.days90.gt(0).astype(int)
-    c['broad'] = c.first_breadth.ge(threshold).astype(int)
     c['log_spend90'] = np.log1p(c.spend90)
+    c['broad'] = c.first_breadth.ge(threshold).astype(int)
     c['month'] = c.index_day.dt.month
-    c['return_gap_days'] = (c.second_day-c.index_day).dt.days
-    assert c.CustomerID.is_unique
-    assert (c.index_day + pd.Timedelta(days=90) <= x.Day.max()).all()
+    c['return_gap_days'] = (c.second_day - c.index_day).dt.days
     assert (c.second_day.dropna() > c.loc[c.second_day.notna(),'index_day']).all()
-    assert c.loc[c.repeat90.eq(1),'return_gap_days'].between(1,90).all()
+    assert (c.index_day + pd.Timedelta(days=90) <= x.Day.max()).all()
     assert c.loc[c.repeat90.eq(0),'return_gap_days'].isna().all()
+    assert c.CustomerID.is_unique
+    assert c.loc[c.repeat90.eq(1),'return_gap_days'].between(1,90).all()
     return c, days
 
+#clean original data
 clean,flow = clean_data(raw)
 cohort,days = make_cohort(clean)
 clean.to_csv(ROOT/'data/processed/clean_transactions.csv.gz',index=False,compression='gzip')
@@ -86,8 +107,8 @@ num['Hour'] = clean.InvoiceDate.dt.hour
 cat = pd.DataFrame({'Country':clean.Country,'YearMonth':clean.InvoiceDate.dt.strftime('%Y-%m'),'Weekday':clean.InvoiceDate.dt.day_name()})
 ohe = pd.get_dummies(cat,dtype=np.int8)
 encoded = sparse.hstack([sparse.csr_matrix(num.to_numpy()),sparse.csr_matrix(ohe.to_numpy())],format='csr')
-sparse.save_npz(ROOT/'data/processed/encoded_transactions.npz',encoded)
 columns = list(num.columns)+list(ohe.columns)
+sparse.save_npz(ROOT/'data/processed/encoded_transactions.npz',encoded)
 (ROOT/'data/processed/encoded_columns.json').write_text(json.dumps(columns,indent=2))
 assert encoded.shape[0]*encoded.shape[1] >= 3_000_000
 
@@ -138,36 +159,77 @@ def test_suite(c):
     adjusted=holm_adjust([r['p'] for r in result])
     for r,adj in zip(result,adjusted):
         r['holm_p']=float(adj); r['reject_holm']=bool(adj<.05)
-    details=dict(n_broad=na,n_narrow=nb,return_broad=ka,return_narrow=kb,table=table.tolist(),expected=chi.expected_freq.tolist(),
-      repeat_broad=pa,repeat_narrow=pb,raw_spend_broad=float(a.spend90.mean()),raw_spend_narrow=float(b.spend90.mean()),
-      log_mean_broad=float(a.log_spend90.mean()),log_mean_narrow=float(b.log_spend90.mean()),
-      spend_ratio=float(np.exp(result[1]['estimate'])),spend_ratio_ci=np.exp(result[1]['ci']).tolist(),
-      pair_n=len(pairs),first_pair_mean=float(pairs.first_breadth.mean()),second_pair_mean=float(pairs.second_breadth.mean()),
-      paired_sd=float(diff.std()),paired_skew=float(diff.skew()),zero_paired_changes=int(diff.eq(0).sum()),
-      sd_log_broad=float(a.log_spend90.std()),sd_log_narrow=float(b.log_spend90.std()),
-      gap_n_broad=len(ga),gap_n_narrow=len(gb),gap_mean_broad=float(ga.mean()),gap_mean_narrow=float(gb.mean()),
-      gap_sd_broad=float(ga.std()),gap_sd_narrow=float(gb.std()),gap_median_broad=float(ga.median()),gap_median_narrow=float(gb.median()),
-      gap_quartiles_broad=ga.quantile([.25,.75]).tolist(),gap_quartiles_narrow=gb.quantile([.25,.75]).tolist(),
-      frequency_counts={str(int(k)):int(v) for k,v in pairs.days90.value_counts().sort_index().items()},
-      frequency_mean=float(pairs.days90.mean()),frequency_median=float(pairs.days90.median()),
-      repeaters_multiple_days=int(pairs.days90.ge(2).sum()))
+    details=dict(
+        n_broad=na,
+        n_narrow=nb,
+        return_broad=ka,
+        return_narrow=kb,table=table.tolist(),
+        expected=chi.expected_freq.tolist(),
+        repeat_broad=pa,
+        repeat_narrow=pb,
+        raw_spend_broad=float(a.spend90.mean()),
+        raw_spend_narrow=float(b.spend90.mean()),
+        log_mean_broad=float(a.log_spend90.mean()),
+        log_mean_narrow=float(b.log_spend90.mean()),
+        spend_ratio=float(np.exp(result[1]['estimate'])),
+        spend_ratio_ci=np.exp(result[1]['ci']).tolist(),
+        pair_n=len(pairs),first_pair_mean=float(pairs.first_breadth.mean()),
+        second_pair_mean=float(pairs.second_breadth.mean()),
+        paired_sd=float(diff.std()),
+        paired_skew=float(diff.skew()),
+        zero_paired_changes=int(diff.eq(0).sum()),
+        sd_log_broad=float(a.log_spend90.std()),
+        sd_log_narrow=float(b.log_spend90.std()),
+        gap_n_broad=len(ga),gap_n_narrow=len(gb),
+        gap_mean_broad=float(ga.mean()),
+        gap_mean_narrow=float(gb.mean()),
+        gap_sd_broad=float(ga.std()),
+        gap_sd_narrow=float(gb.std()),
+        gap_median_broad=float(ga.median()),
+        gap_median_narrow=float(gb.median()),
+        gap_quartiles_broad=ga.quantile([.25,.75]).tolist(),
+        gap_quartiles_narrow=gb.quantile([.25,.75]).tolist(),
+        frequency_counts={
+            str(int(k)):int(v) 
+            for k,v in pairs.days90.value_counts().sort_index().items()},
+        frequency_mean=float(pairs.days90.mean()),frequency_median=float(pairs.days90.median()),
+        repeaters_multiple_days=int(pairs.days90.ge(2).sum()))
+    pooled_test = stats.ttest_ind(
+        a.log_spend90,
+        b.log_spend90,
+        equal_var=True
+    )
+    welch_test = stats.ttest_ind(
+        a.spend90,
+        b.spend90,
+        equal_var=False
+    )
+    gap_test = stats.mannwhitneyu(ga, gb, alternative='two-sided')
+    frequency_test = stats.kendalltau(
+        pairs.first_breadth,
+        pairs.days90,
+        variant='b',
+        method='asymptotic'
+    )
     alternatives={
-      'Fisher_exact_p':float(stats.fisher_exact(table).pvalue),
       'Yates_chi2_p':float(stats.chi2_contingency(table,correction=True).pvalue),
-      'Pooled_log_t':float(stats.ttest_ind(a.log_spend90,b.log_spend90,equal_var=True).statistic),
-      'Pooled_log_p':float(stats.ttest_ind(a.log_spend90,b.log_spend90,equal_var=True).pvalue),
-      'Raw_spend_Welch_p':float(stats.ttest_ind(a.spend90,b.spend90,equal_var=False).pvalue),
-      'Raw_spend_Welch_ci':list(map(float,stats.ttest_ind(a.spend90,b.spend90,equal_var=False).confidence_interval())),
+      'Fisher_exact_p':float(stats.fisher_exact(table).pvalue),
+      'Pooled_log_p':float(pooled_test.pvalue),
+      'Pooled_log_t':float(pooled_test.statistic),
+      'Raw_spend_Welch_ci':list(map(float,welch_test.confidence_interval())),
+      'Raw_spend_Welch_p':float(welch_test.pvalue),
       'Mann_Whitney_log_p':float(stats.mannwhitneyu(a.log_spend90,b.log_spend90).pvalue),
       'Wilcoxon_paired_p':float(stats.wilcoxon(diff,zero_method='wilcox',method='approx').pvalue),
       'Sign_test_p':float(stats.binomtest(int((diff>0).sum()),int((diff!=0).sum()),.5).pvalue),
-      'Gap_Mann_Whitney_U':float(stats.mannwhitneyu(ga,gb,alternative='two-sided').statistic),
-      'Gap_Mann_Whitney_p':float(stats.mannwhitneyu(ga,gb,alternative='two-sided').pvalue),
-      'Frequency_Kendall_tau_b':float(stats.kendalltau(pairs.first_breadth,pairs.days90,variant='b',method='asymptotic').statistic),
-      'Frequency_Kendall_p':float(stats.kendalltau(pairs.first_breadth,pairs.days90,variant='b',method='asymptotic').pvalue)}
+      'Gap_Mann_Whitney_p':float(gap_test.pvalue),
+      'Gap_Mann_Whitney_U':float(gap_test.statistic),
+      'Frequency_Kendall_p':float(frequency_test.pvalue),
+      'Frequency_Kendall_tau_b':float(frequency_test.statistic)}
     return result,details,alternatives
 
 results,details,alternatives=test_suite(cohort)
+
+# %%
 
 # %% Robustness: each resampled record is a customer, never an item line
 rng=np.random.default_rng(558)
@@ -220,19 +282,41 @@ for cutoff in [5,15]:
     rr,dd,_=test_suite(cc)
     sensitivity.append({'variant':f'breadth_cutoff_{cutoff}','n':len(cc),'tests':rr,'details':dd})
 q1,q3=clean.LineValue.quantile([.25,.75]); fence=q3+1.5*(q3-q1)
-summary=dict(raw_shape=list(raw.shape),missing={k:int(v) for k,v in raw.isna().sum().items()},duplicates=int(raw.duplicated().sum()),
-  clean_shape=list(clean.shape),encoded_shape=list(encoded.shape),encoded_cells=int(np.prod(encoded.shape)),
-  encoding_levels={col:int(cat[col].nunique()) for col in cat},clean_missing_description=int(clean.Description.isna().sum()),
-  raw_nonpositive_quantity=int(raw.Quantity.le(0).sum()),raw_nonpositive_price=int(raw.UnitPrice.le(0).sum()),raw_cancel=int(raw.InvoiceNo.astype(str).str.upper().str.startswith('C').sum()),
-  clean_linevalue_fence=float(fence),clean_above_fence=int(clean.LineValue.gt(fence).sum()),
-  clean_duplicate_rows=int(clean.duplicated().sum()),clean_customers=int(clean.CustomerID.nunique()),clean_invoices=int(clean.InvoiceNo.nunique()),
-  uk_customers=int(days.CustomerID.nunique()),uk_shopping_days=len(days),cohort_n=len(cohort),date_min=str(raw.InvoiceDate.min()),date_max=str(raw.InvoiceDate.max()),
-  first_breadth_median=float(cohort.first_breadth.median()),first_spend_broad=float(a.first_spend.median()),first_spend_narrow=float(b.first_spend.median()),
-  sha256=hashlib.sha256(RAW.read_bytes()).hexdigest(),results=results,details=details,alternatives=alternatives,bootstrap_ci=bootstrap,
-  extension_bootstrap_ci={'T4':gap_boot_ci,'T5':rank_boot_ci},bootstrap_seeds={'T1_T3':558,'T4':5584,'T5':5585},
-  analysis_history={'original_plan_date':'2026-10-13','extension_plan_date':'2026-10-25','extension_status':'T4/T5 specified after review of T1-T3, before new tests; not externally preregistered'},
-  holm_family_size=5,adjusted_risk=adjusted,sensitivity=sensitivity,
-  versions={'python':platform.python_version(),'numpy':np.__version__,'pandas':pd.__version__,'scipy':scipy.__version__,'matplotlib':matplotlib.__version__})
+summary=dict(
+    raw_shape=list(raw.shape),
+    missing={
+        k:int(v) 
+        for k,v in raw.isna().sum().items()},
+    duplicates=int(raw.duplicated().sum()),
+    clean_shape=list(clean.shape),
+    encoded_shape=list(encoded.shape),encoded_cells=int(np.prod(encoded.shape)),
+    encoding_levels={
+        col:int(cat[col].nunique()) 
+        for col in cat},
+    clean_missing_description=int(clean.Description.isna().sum()),
+    raw_nonpositive_quantity=int(raw.Quantity.le(0).sum()),
+    raw_nonpositive_price=int(raw.UnitPrice.le(0).sum()),
+    raw_cancel=int(raw.InvoiceNo.astype(str).str.upper().str.startswith('C').sum()),
+    clean_linevalue_fence=float(fence),
+    clean_above_fence=int(clean.LineValue.gt(fence).sum()),
+    clean_duplicate_rows=int(clean.duplicated().sum()),
+    clean_customers=int(clean.CustomerID.nunique()),
+    clean_invoices=int(clean.InvoiceNo.nunique()),
+    cohort_n=len(cohort),
+    date_min=str(raw.InvoiceDate.min()),
+    date_max=str(raw.InvoiceDate.max()),
+    uk_customers=int(days.CustomerID.nunique()),
+    uk_shopping_days=len(days),
+    sha256=hashlib.sha256(RAW.read_bytes()).hexdigest(),
+    first_breadth_median=float(cohort.first_breadth.median()),
+    first_spend_broad=float(a.first_spend.median()),
+    first_spend_narrow=float(b.first_spend.median()),
+    results=results,details=details,alternatives=alternatives,bootstrap_ci=bootstrap,
+    extension_bootstrap_ci={'T4':gap_boot_ci,'T5':rank_boot_ci},
+    bootstrap_seeds={'T1_T3':558,'T4':5584,'T5':5585},
+    analysis_history={'original_plan_date':'2026-10-13','extension_plan_date':'2026-10-25','extension_status':'T4/T5 specified after review of T1-T3, before new tests; not externally preregistered'},
+    holm_family_size=5,adjusted_risk=adjusted,sensitivity=sensitivity,
+    versions={'python':platform.python_version(),'numpy':np.__version__,'pandas':pd.__version__,'scipy':scipy.__version__,'matplotlib':matplotlib.__version__})
 (ROOT/'results/results.json').write_text(json.dumps(summary,indent=2))
 (ROOT/'environment_versions.json').write_text(json.dumps(summary['versions'],indent=2))
 
